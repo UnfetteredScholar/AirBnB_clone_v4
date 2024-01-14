@@ -1,15 +1,20 @@
 const selectedAmenities = {};
+const selectedStates = {};
+const selectedCities = {};
 // const HOST = '0.0.0.0';
 const HOST = '127.0.0.1';
 $(document).ready(init);
 
 function init () {
-  $('.amenities .popover input').change(checkAction);
+  $('.amenities .popover input').change(checkAmenityAction);
+  $('.state_input').change(checkStateAction);
+  $('.city_input').change(checkCityAction);
   checkApiStatus();
-  filterPlaces();
+  fetchAllPlaces();
+  $('button').click(filterPlaces);
 }
 
-function checkAction () {
+function checkAmenityAction () {
   if ($(this).is(':checked')) {
     selectedAmenities[$(this).attr('data-id')] = $(this).attr('data-name');
   } else if ($(this).is(':not(:checked)')) {
@@ -18,9 +23,36 @@ function checkAction () {
   displayAmenities(selectedAmenities);
 }
 
+function checkStateAction () {
+  if ($(this).is(':checked')) {
+    selectedStates[$(this).attr('data-id')] = $(this).attr('data-name');
+  } else if ($(this).is(':not(:checked)')) {
+    delete selectedStates[$(this).attr('data-id')];
+  }
+  displayStatesCities(selectedStates, selectedCities);
+}
+
+function checkCityAction () {
+  if ($(this).is(':checked')) {
+    selectedCities[$(this).attr('data-id')] = $(this).attr('data-name');
+  } else if ($(this).is(':not(:checked)')) {
+    delete selectedCities[$(this).attr('data-id')];
+  }
+  displayStatesCities(selectedStates, selectedCities);
+}
+
 function displayAmenities (selectedAmenities) {
   const amenities = Object.values(selectedAmenities).sort();
   $('.amenities h4').text(amenities.join(', '));
+}
+
+function displayStatesCities (selectedStates, selectedCities) {
+  let items;
+  const states = Object.values(selectedStates);
+  const cities = Object.values(selectedCities);
+  items = states.concat(cities);
+  items = items.sort();
+  $('.locations h4').text(items.join(', '));
 }
 
 function checkApiStatus () {
@@ -35,12 +67,31 @@ function checkApiStatus () {
   });
 }
 
-function filterPlaces () {
+function fetchAllPlaces () {
   const url = `http://${HOST}:5001/api/v1/places_search/`;
   $.ajax({
     url,
     headers: { 'Content-Type': 'application/json' },
     data: JSON.stringify({}),
+    type: 'POST',
+    dataType: 'json',
+    success: displayPlaces,
+    error: (error) => {
+      console.log(error);
+    }
+  });
+}
+
+function filterPlaces () {
+  const url = `http://${HOST}:5001/api/v1/places_search/`;
+  $.ajax({
+    url,
+    headers: { 'Content-Type': 'application/json' },
+    data: JSON.stringify({
+      states: Object.keys(selectedStates),
+      cities: Object.keys(selectedCities),
+      amenities: Object.keys(selectedAmenities)
+    }),
     type: 'POST',
     dataType: 'json',
     success: displayPlaces,
